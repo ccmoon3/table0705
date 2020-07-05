@@ -3,6 +3,23 @@
 }
 
 .editable-table{
-  width:'800px';
-  margin:'50px auto';
+  width: 1000px;
+  margin: 50px auto;
+}
+
+.red-btn{
+  background-color: #FFC1C1;
+  color: #B22222;
+  width:90px;
+}
+
+.green-col{
+  background-color: #B4EEB4 !important;
+  color: #008B45 !important;
+}
+
+.yellow-btn{
+  background-color: #FFEC8B;
+  color: #B8860B;
+  width:90px;
 }

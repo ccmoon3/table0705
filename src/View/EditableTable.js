@@ -14,30 +14,16 @@ const EditableTable = () => {
     const [form] = Form.useForm();
     const [data, setData] = useState([{ ...originData, id: '501', key: 0 }]);
     const [selectedKeys, setSelectedKeys] = useState([])
-    const [editingKey, setEditingKey] = useState('');
-    const rowSelection = {
-        selectedKeys,
-        onChange: (selectedRowKeys) => {
-            console.log('selectedRowKeys changed: ', selectedRowKeys);
-            setSelectedKeys(selectedRowKeys);
-        },
-    };
-    const edit = record => {
-        form.setFieldsValue({
-            name: '',
-            age: '',
-            address: '',
-            ...record,
-        });
-        setEditingKey(record.key);
-    };
 
     function addRow() {
-        data.push({
+        const newAdd = {
             ...originData,
-            key: Math.max(...data.map(d => d.key))
-        })
-        setData(data);
+            key: data.length > 0 ? Math.max(...data.map(d => d.key)) + 1 : 0
+        }
+        setData([
+            ...data,
+            newAdd
+        ]);
     }
 
     function deleteRows() {
@@ -46,124 +32,138 @@ const EditableTable = () => {
         setSelectedKeys([])
     }
 
-    function cancel() {
-        setEditingKey('');
+    function updateRows() {
+        alert(JSON.stringify(data))
     };
 
-    async function updateRows(key) {
-        try {
-            const row = await form.validateFields();
-            const newData = [...data];
-            const index = newData.findIndex(item => key === item.key);
-
-            if (index > -1) {
-                const item = newData[index];
-                newData.splice(index, 1, { ...item, ...row });
-                setData(newData);
-                cancel();
-            } else {
-                newData.push(row);
-                setData(newData);
-                cancel();
-            }
-        } catch (errInfo) {
-            console.log('Validate Failed:', errInfo);
+    function updateCell(key){
+        const newData = [...data]
+        const index = newData.findIndex(item => item.key === key)
+        newData[index] = {
+            ...newData[index],
+            ...form.getFieldsValue()
         }
-    };
+        console.log(newData)
+        setData(newData)
+    }
 
     const columns = [
         {
             title: 'ID',
             dataIndex: 'id',
-            width: 80,
             editable: false,
-            sorter: (a, b) => a.id - b.id
+            className: "green-col",
+            sorter: (a, b) => a.id > b.id
         },
         {
             title: 'Name',
             dataIndex: 'name',
-            width: 100,
             editable: false,
-            sorter: (a, b) => a.name - b.name
+            className: "green-col",
+            sorter: (a, b) => a.name > b.name
         },
         {
             title: 'Location',
             dataIndex: 'location',
-            width: 100,
             editable: false,
-            sorter: (a, b) => a.location - b.location
+            className: "green-col",
+            sorter: (a, b) => a.location > b.location
         },
         {
             title: 'Office',
             dataIndex: 'office',
-            width: 100,
             editable: false,
-            sorter: (a, b) => a.office - b.office
+            className: "green-col",
+            sorter: (a, b) => a.office > b.office
         },
         {
             title: 'Phone',
             dataIndex: 'phone',
+            className: "green-col",
             children: [
                 {
                     title: 'Office',
                     dataIndex: 'phoneOffice',
                     key: 'phoneOffice',
                     editable: false,
-                    sorter: (a, b) => a.phoneOffice - b.phoneOffice,
-                    width: 100
+                    className: "green-col",
+                    sorter: (a, b) => a.phoneOffice > b.phoneOffice,
                 },
                 {
                     title: 'Cell',
                     dataIndex: 'phoneCell',
                     key: 'phoneCell',
                     editable: true,
-                    sorter: (a, b) => a.phoneCell - b.phoneCell,
-                    width: 100
+                    className: "green-col",
+                    sorter: (a, b) => a.phoneCell > b.phoneCell,
                 }
             ]
         },
     ];
 
-    const finalColumns = columns.map(col => {
-        if (!col.editable) {
-            return col;
+    const finalColumns = columns.reduce((cols, curCol) => {
+        if (curCol.children) {
+            cols.push({
+                ...curCol,
+                children: (curCol.children || []).map(col => {
+                    return {
+                        ...col,
+                        onCell: (record) => ({
+                            record,
+                            dataIndex: col.dataIndex,
+                            form: form,
+                            editable: col.editable,
+                            updateCell:updateCell
+                        })
+                    };
+                })
+            });
+        } else {
+            cols.push({
+                ...curCol,
+                onCell: (record) => ({
+                    record,
+                    dataIndex: curCol.dataIndex,
+                    editable: curCol.editable,
+                    form: form
+                })
+            });
         }
+        return cols
+    }, []);
 
-        return {
-            ...col,
-            onCell: record => ({
-                record,
-                dataIndex: col.dataIndex,
-                title: col.title,
-                form: form,
-            }),
-        };
-    });
     return (
-        <div>
-            <Form form={form}>
+        <div className='editable-table'>
+            <Form form={form} component={false}>
                 <Table
                     components={{
                         body: {
                             cell: EditableCell,
                         },
                     }}
-                    rowSelection={rowSelection}
+                    rowSelection={{
+                        selectedRowKeys: selectedKeys,
+                        onChange: (selectedRowKeys) => {
+                            console.log('selectedRowKeys changed: ', selectedRowKeys);
+                            setSelectedKeys(selectedRowKeys);
+                        },
+                    }}
                     bordered
+                    size='small'
                     dataSource={data}
                     columns={finalColumns}
-                    rowClassName="editable-row"
+                    pagination={false}
                 />
             </Form>
-            <Row>
-                <Col span={16}>
-                    <Button onClick={deleteRows}>Delete</Button>
+            <Row style={{ marginTop: "40px" }}>
+                <Col span={18}>
+                    <Button className="red-btn" onClick={deleteRows}>Delete</Button>
                 </Col>
-                <Col span={4}>
-                    <Button onClick={updateRows}>Update</Button>
+                <Col span={3}>
+                    <Button className="yellow-btn" onClick={updateRows}>Update</Button>
                 </Col>
-                <Col span={4}>
-                    <Button onClick={addRow}>Add</Button>
+                <Col span={3} style={{textAlign:'right'}}>
+                    <Button className="yellow-btn" onClick={addRow}>Add</Button>
                 </Col>
             </Row>
         </div>

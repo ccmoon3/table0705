@@ -1,50 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Form, Input } from "antd";
 
 const EditableCell = ({
     dataIndex,
-    title,
-    record,
-    index,
-    children,
     form,
-    ...restProps
+    record,
+    children,
+    editable,
+    updateCell,
 }) => {
+    const editRef = useRef(null);
     const [editing, setEditing] = useState(false);
-    // useEffect(() => {
-    //     if (editing) {
-    //         inputRef.current.focus();
-    //     }
-    // }, [editing]);
 
-    function toggleEdit() {
-        setEditing(!editing);
+    useEffect(() => {
+        if (editing && editRef.current) {
+            editRef.current.focus()
+        }
+    }, [editing]);
+
+    function toEdit(record) {
+        setEditing(true);
         form.setFieldsValue({
-            [dataIndex]: record[dataIndex],
+            phoneCell: '',
+            ...record,
         });
     };
 
+    function toUpdate() {
+        updateCell(record.key)
+        setEditing(false);
+    }
+
     return (
-        <td {...restProps}>
-            {dataIndex === 'phoneCell' ? (
-                <div>
-                    {
-                        editing ? (
-                            <Form.Item name={dataIndex}>
-                                <Input /*onPressEnter={save} onBlur={save}*/ />
-                            </Form.Item>
-                        ) : (
-                                <div
-                                    className="editable-cell-value-wrap"
-                                    onDoubleClick={toggleEdit}
-                                >
-                                    {children}
-                                </div>
-                            )
-                    }
-                </div>) : (
-                    children
-                )}
+        <td>
+            {
+                editable ? (
+                    <div>
+                        {
+                            editing ? (
+                                <Form.Item name={dataIndex} style={{ marginBottom: '0px' }}>
+                                    <Input ref={editRef} style={{width: '140px'}} onBlur={toUpdate} />
+                                </Form.Item>
+                            ) : (
+                                    <div onDoubleClick={() => toEdit(record)} style={{ width: '140px', height: '21px' }}>
+                                        {children}
+                                    </div>
+                                )
+                        }
+                    </div>) : (
+                        children
+                    )
+            }
         </td>
     );
 };
